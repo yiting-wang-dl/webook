@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webook-mysql
+spec:
+  selector:
+    app: webook-mysql
+  ports:
+    - protocol: TCP
+      # external access port
+      port: 3333
+      # internal access port, default is 3306
+      targetPort: 3308
+  type: LoadBalancer
+  

@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webook
+spec:
+  # 2 pods
+  replicas: 2
+  # select pods with labels match app=webook
+  selector:
+    matchLabels:
+      app: webook
+  # template to create each pod
+  template:
+    metadata:
+      labels:
+        # needs to match the matchLabels in selector
+        app: webook
+    # specification of the pods that Deployment manages
+    spec:
+      # all the containers inside a pod. one pod can have multiple containers, but usually just one
+      containers:
+        - name: webook
+          # image created by Makefile - make docker
+          image: ytw/webook:v0.0.1
+          ports:
+            - containerPort: 8081

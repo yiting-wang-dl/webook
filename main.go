@@ -2,8 +2,6 @@ package main
 
 import (
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/webook/config"
 	"github.com/webook/internal/repository"
@@ -27,7 +25,7 @@ func main() {
 	server := initWebServer()
 	initUserHdl(db, server)
 
-	server.Run(":8080")
+	server.Run(":8081")
 }
 
 func initUserHdl(db *gorm.DB, server *gin.Engine) {
@@ -76,8 +74,8 @@ func initWebServer() *gin.Engine {
 
 	//server.Use(ratelimit.NewBuilder(redisClient, time.Second, 1).Build())
 
-	//useJWT(server)
-	useSession(server)
+	//useSession(server)
+	useJWT(server)
 
 	return server
 }
@@ -87,20 +85,20 @@ func useJWT(server *gin.Engine) {
 	server.Use(login.CheckLogin())
 }
 
-func useSession(server *gin.Engine) {
-	login := &middleware.LoginMiddlewareBuilder{}
-	// 1. userId is saved in Cookie
-	store := cookie.NewStore([]byte("secret"))
-	// or 2. save in memory
-	// store := memstore.NewStore([]byte("k6CswdUm75WKcbM68UQUuxVsHSpTCwgK"),
-	//	[]byte("eF1`yQ9>yT1`tH1,sJ0.zD8;mZ9~nC6("))
-	// or 3. save in redis
-	//store, err := redis.NewStore(16, "tcp",
-	//	"localhost:6379", "",
-	//	[]byte("k6CswdUm75WKcbM68UQUuxVsHSpTCwgK"),
-	//	[]byte("k6CswdUm75WKcbM68UQUuxVsHSpTCwgA"))
-	//if err != nil {
-	//	panic(err)
-	//}
-	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
-}
+//func useSession(server *gin.Engine) {
+//	login := &middleware.LoginMiddlewareBuilder{}
+//	// 1. userId is saved in Cookie
+//	store := cookie.NewStore([]byte("secret"))
+//	// or 2. save in memory
+//	// store := memstore.NewStore([]byte("k6CswdUm75WKcbM68UQUuxVsHSpTCwgK"),
+//	//	[]byte("eF1`yQ9>yT1`tH1,sJ0.zD8;mZ9~nC6("))
+//	// or 3. save in redis
+//	//store, err := redis.NewStore(16, "tcp",
+//	//	"localhost:6379", "",
+//	//	[]byte("k6CswdUm75WKcbM68UQUuxVsHSpTCwgK"),
+//	//	[]byte("k6CswdUm75WKcbM68UQUuxVsHSpTCwgA"))
+//	//if err != nil {
+//	//	panic(err)
+//	//}
+//	server.Use(sessions.Sessions("ssid", store), login.CheckLogin())
+//}

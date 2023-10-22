@@ -28,21 +28,24 @@ func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 			return
 		}
 
-		segs := strings.Split(authCode, " ")
-		if len(segs) != 2 {
+		authSegments := strings.Split(authCode, " ")
+		if len(authSegments) != 2 {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		tokenStr := segs[1]
+		tokenStr := authSegments[1]
+		println("toeknStr in login_JWT: ", tokenStr)
 		var uc web.UserClaims
 		token, err := jwt.ParseWithClaims(tokenStr, &uc, func(token *jwt.Token) (interface{}, error) {
 			return web.JWTKey, nil
 		})
 		if err != nil {
+			println("Incorrect token")
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
-		if token != nil || !token.Valid {
+		if token == nil || !token.Valid {
+			println("Token is no longer valid")
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
@@ -54,8 +57,9 @@ func (m *LoginJWTMiddlewareBuilder) CheckLogin() gin.HandlerFunc {
 
 		expireTime := uc.ExpiresAt
 		// if check every 1 min, need to refresh when remaining time is < 50s
-		if expireTime.Sub(time.Now()) < time.Second*50 {
-			uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute * 1))
+		if expireTime.Sub(time.Now()) < time.Second*50 { //time.Second*6000 {
+			uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Minute * 1)) // check every 1 minute
+			//uc.ExpiresAt = jwt.NewNumericDate(time.Now().Add(time.Hour * 15)) // testing purpose, set to 15 Hour
 			tokenStr, err = token.SignedString(web.JWTKey)
 			ctx.Header("x-jwt-token", tokenStr)
 			if err != nil {

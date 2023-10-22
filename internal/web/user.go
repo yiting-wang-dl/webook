@@ -1,6 +1,7 @@
 package web
 
 import (
+	"fmt"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -33,8 +34,8 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 func (h *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
 	ug.POST("/signup", h.SignUp)
-	ug.POST("/login", h.Login)
-	//ug.POST("/login", h.LoginJWT)
+	//ug.POST("/login", h.Login)
+	ug.POST("/login", h.LoginJWT)
 	ug.POST("/edit", h.Edit)
 	ug.GET("/profile", h.Profile)
 }
@@ -121,30 +122,18 @@ func (h *UserHandler) Login(ctx *gin.Context) {
 }
 
 func (h *UserHandler) LoginJWT(ctx *gin.Context) {
-	type Req struct {
+	type LoginReq struct {
 		Email    string `json:"email"`
 		Password string `json:"password"`
 	}
-	var req Req
+	var req LoginReq
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
 	u, err := h.svc.Login(ctx, req.Email, req.Password)
 	switch err {
 	case nil:
-		uc := UserClaims{
-			Uid:       u.Id,
-			UserAgent: ctx.GetHeader("User-Agent"),
-			RegisteredClaims: jwt.RegisteredClaims{
-				ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 5)),
-			},
-		}
-		token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
-		tokenStr, err := token.SignedString(JWTKey)
-		if err != nil {
-			ctx.String(http.StatusOK, "System Error")
-		}
-		ctx.Header("x-jwt-token", tokenStr)
+		h.setJWTToken(ctx, u.Id)
 		ctx.String(http.StatusOK, "Login Successful")
 	case service.ErrInvalidUserOrPassword:
 		ctx.String(http.StatusOK, "Incorrect Username or Password")
@@ -153,38 +142,59 @@ func (h *UserHandler) LoginJWT(ctx *gin.Context) {
 	}
 }
 
+func (h *UserHandler) setJWTToken(ctx *gin.Context, uid int64) {
+	uc := UserClaims{
+		Uid:       uid,
+		UserAgent: ctx.GetHeader("User-Agent"),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Minute * 15)), // 15 minutes
+			//ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour * 15)), // testing in postman
+		},
+	}
+	fmt.Println("initiate time: ", time.Now())
+	fmt.Println("ExpiresAt: ", time.Now().Add(time.Hour*15))
+	token := jwt.NewWithClaims(jwt.SigningMethodHS512, uc)
+	tokenStr, err := token.SignedString(JWTKey)
+	if err != nil {
+		ctx.String(http.StatusOK, "System Error")
+	}
+	ctx.Header("x-jwt-token", tokenStr)
+	println("tokenStr", tokenStr)
+}
+
 func (h *UserHandler) Edit(ctx *gin.Context) {
 	type Req struct {
-		Id       int64  `json:"uid"`
+		//Id       int64  `json:"uid"`
 		Nickname string `json:"nickname"`
-		Birthday string `json:"birthday"`
+		Birthday string `json:"birthday"` // YYYY-MM-DD
 		AboutMe  string `json:"aboutMe"`
 	}
 	var req Req
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
+
 	// 1. session id
-	sess := sessions.Default(ctx)
-	uid, ok := sess.Get("userId").(int64)
-	if !ok {
-		ctx.String(http.StatusOK, "Cannot convert uid into int64")
-		return
-	}
-	// or 2. JWT
-	//uc, ok := ctx.MustGet("user").(UserClaims)
+	//sess := sessions.Default(ctx)
+	//uid, ok := sess.Get("userId").(int64)
 	//if !ok {
-	//	ctx.AbortWithStatus(http.StatusUnauthorized)
+	//	ctx.String(http.StatusOK, "Cannot convert uid into int64")
 	//	return
 	//}
+	// or 2. JWT
+	uc, ok := ctx.MustGet("user").(UserClaims)
+	if !ok {
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 	birthday, err := time.Parse(time.DateOnly, req.Birthday)
 	if err != nil {
 		ctx.String(http.StatusOK, "Incorrect Birthday Format")
 		return
 	}
 	err = h.svc.UpdateNonSensitiveInfo(ctx, domain.User{
-		//Id:       uc.Uid,
-		Id:       uid,
+		//Id:       uid,  // sessionid
+		Id:       uc.Uid, // JWT
 		Nickname: req.Nickname,
 		Birthday: birthday,
 		AboutMe:  req.AboutMe,

@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webook-redis
+spec:
+  selector:
+    app: webook-redis
+  ports:
+    - protocol: TCP
+      # k8s internal port, use 6379
+      port: 6380
+      # external access ports, must between 30000 - 32767
+      nodePort: 31379
+      # pod expose port, use 6379
+      targetPort: 6380
+  type: NodePort
+  # export the port for external access
+  

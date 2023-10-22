@@ -1,0 +1,17 @@
+# what specifications are needed for mysql storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: webook-mysql-pvc
+spec:
+  storageClassName: manual
+  # whether it can be read and write by more than one pod
+  accessModes:
+  # read and write by only one pod
+    - ReadWriteOnce
+ # what resources are needed
+  resources:
+    requests:
+      # requesting 1G storage
+      storage: 1Gi
+  
