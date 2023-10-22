@@ -23,8 +23,7 @@ spec:
               value: root
           imagePullPolicy: IfNotPresent
           ports:
-            # default 3306
-            - containerPort: 3308
+            - containerPort: 3306
           # where to store mysql data
           volumeMounts:
             - mountPath: /var/lib/mysql

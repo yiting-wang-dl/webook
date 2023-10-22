@@ -11,19 +11,20 @@ import (
 	"github.com/webook/internal/web/middleware"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"net/http"
 	"strings"
 	"time"
 )
 
 func main() {
-	//server := gin.Default()
-	//server.GET("/hello", func(ctx *gin.Context) {
-	//	ctx.String(http.StatusOK, "Hello, Go-Gin is Up！")
-	//})
+	server := gin.Default()
+	server.GET("/hello", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Hello, Go-Gin is Up！")
+	})
 
-	db := initDB()
-	server := initWebServer()
-	initUserHdl(db, server)
+	//db := initDB()
+	//server := initWebServer()
+	//initUserHdl(db, server)
 
 	server.Run(":8081")
 }

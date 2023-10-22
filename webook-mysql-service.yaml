@@ -8,8 +8,8 @@ spec:
   ports:
     - protocol: TCP
       # external access port
-      port: 3333
-      # internal access port, default is 3306
-      targetPort: 3308
+      port: 3308
+      # internal access port
+      targetPort: 3306
   type: LoadBalancer
   
