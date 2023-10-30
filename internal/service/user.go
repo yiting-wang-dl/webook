@@ -14,10 +14,10 @@ var (
 )
 
 type UserService struct {
-	repo *repository.UserRepository
+	repo *repository.CacheUserRepository
 }
 
-func NewUserService(repo *repository.UserRepository) *UserService {
+func NewUserService(repo *repository.CacheUserRepository) *UserService {
 	return &UserService{
 		repo: repo,
 	}
