@@ -16,13 +16,13 @@ type User struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 
-	//WechatInfo WechatInfo
+	WechatInfo WechatInfo
 }
 
-type Address struct {
-	Province string
-	Region   string
-}
+//type Address struct {
+//	Province string
+//	Region   string
+//}
 
 //func (u User) ValidateEmail() bool {
 // 在这里用正则表达式校验

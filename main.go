@@ -1,25 +1,14 @@
 package main
 
 import (
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
-	"github.com/webook/config"
-	"github.com/webook/internal/repository"
-	"github.com/webook/internal/repository/dao"
-	"github.com/webook/internal/service"
-	"github.com/webook/internal/web"
-	"github.com/webook/internal/web/middleware"
-	"gorm.io/driver/mysql"
-	"gorm.io/gorm"
 	"net/http"
-	"strings"
-	"time"
 )
 
 func main() {
-	server := gin.Default()
+	server := InitWebServer()
 	server.GET("/hello", func(ctx *gin.Context) {
-		ctx.String(http.StatusOK, "Hello, Go-Gin is Up！")
+		ctx.String(http.StatusOK, "hello，启动成功了！")
 	})
 
 	//db := initDB()
@@ -29,62 +18,77 @@ func main() {
 	server.Run(":8080")
 }
 
-func initUserHdl(db *gorm.DB, server *gin.Engine) {
-	ud := dao.NewUserDAO(db)
-	ur := repository.NewUserRepository(ud)
-	us := service.NewUserService(ur)
-	hdl := web.NewUserHandler(us)
-	hdl.RegisterRoutes(server)
-}
-
-func initDB() *gorm.DB {
-	db, err := gorm.Open(mysql.Open(config.Config.DB.DSN))
-	if err != nil {
-		panic(err)
-	}
-	err = dao.InitTables(db)
-	if err != nil {
-		panic(err)
-	}
-	return db
-}
-
-func initWebServer() *gin.Engine {
-	server := gin.Default()
-
-	server.Use(cors.New(cors.Config{
-		//AllowOrigins:     []string{"http://localhost:3000"},
-		AllowCredentials: true,
-		AllowHeaders:     []string{"Content-Type", "Authorization"},
-		ExposeHeaders:    []string{"x-jwt-token"},
-		AllowOriginFunc: func(origin string) bool {
-			if strings.HasPrefix(origin, "http://localhost") {
-				//if strings.Contains(origin, "localhost") {
-				return true
-			}
-			return strings.Contains(origin, "webook.com")
-		},
-		MaxAge: 6 * time.Hour,
-	}), func(ctx *gin.Context) {
-		println("NOTE: Implement Another Middleware")
-	})
-
-	//redisClient := redis.NewClient(&redis.Options{
-	//	Addr: config.Config.Redis.Addr,
-	//})
-
-	//server.Use(ratelimit.NewBuilder(redisClient, time.Second, 1).Build())
-
-	//useSession(server)
-	useJWT(server)
-
-	return server
-}
-
-func useJWT(server *gin.Engine) {
-	login := middleware.LoginJWTMiddlewareBuilder{}
-	server.Use(login.CheckLogin())
-}
+//func initUserHdl(db *gorm.DB,
+//	redisClient redis.Cmdable,
+//	codeSvc service.CodeService,
+//	server *gin.Engine) {
+//	ud := dao.NewUserDAO(db)
+//	uc := cache.NewUserCache(redisClient)
+//	ur := repository.NewCachedUserRepository(ud, uc)
+//	us := service.NewUserService(ur)
+//	hdl := web.NewUserHandler(us, codeSvc)
+//	hdl.RegisterRoutes(server)
+//}
+//
+//func initDB() *gorm.DB {
+//	db, err := gorm.Open(mysql.Open(config.Config.DB.DSN))
+//	if err != nil {
+//		panic(err)
+//	}
+//	err = dao.InitTables(db)
+//	if err != nil {
+//		panic(err)
+//	}
+//	return db
+//}
+//
+//func initCodeSvc(redisClient redis.Cmdable) *service.CodeService {
+//	cc := cache.NewCodeCache(redisClient)
+//	crepo := repository.NewCodeRepository(cc)
+//	return service.NewCodeService(crepo, initMemorySms())
+//}
+//
+//func initMemorySms() sms.Service {
+//	return localsms.NewService()
+//}
+//
+//func initWebServer() *gin.Engine {
+//	server := gin.Default()
+//
+//	server.Use(cors.New(cors.Config{
+//		//AllowOrigins:     []string{"http://localhost:3000"},
+//		AllowCredentials: true,
+//		AllowHeaders:     []string{"Content-Type", "Authorization"},
+//		ExposeHeaders:    []string{"x-jwt-token", "x-refresh-token"},
+//		AllowOriginFunc: func(origin string) bool {
+//			if strings.HasPrefix(origin, "http://localhost") {
+//				//if strings.Contains(origin, "localhost") {
+//				return true
+//			}
+//			return strings.Contains(origin, "webook.com")
+//		},
+//		MaxAge: 6 * time.Hour,
+//	}),
+//		func(ctx *gin.Context) {
+//			println("NOTE: Implement Another Middleware")
+//		})
+//
+//	//redisClient := redis.NewClient(&redis.Options{
+//	//	Addr: config.Config.Redis.Addr,
+//	//})
+//
+//	//server.Use(ratelimit.NewBuilder(redisClient, time.Second, 1).Build())
+//
+//	//useSession(server)
+//	useJWT(server)
+//
+//	return server
+//}
+//
+//func useJWT(server *gin.Engine) {
+//	login := middleware.LoginJWTMiddlewareBuilder{}
+//	server.Use(login.CheckLogin())
+//}
 
 //func useSession(server *gin.Engine) {
 //	login := &middleware.LoginMiddlewareBuilder{}

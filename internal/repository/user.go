@@ -21,7 +21,7 @@ type UserRepository interface {
 	UpdateNonZeroFields(ctx context.Context, user domain.User) error
 	FindById(ctx context.Context, uid int64) (domain.User, error)
 	FindByPhone(ctx context.Context, phone string) (domain.User, error)
-	//FindByWechat(ctx context.Context, openId string) (domain.User, error)
+	FindByWechat(ctx context.Context, openId string) (domain.User, error)
 }
 
 type CachedUserRepository struct {
@@ -29,13 +29,34 @@ type CachedUserRepository struct {
 	cache cache.UserCache
 }
 
-func NewCachedUserRepository(dao dao.UserDAO,
-	c cache.UserCache) *CachedUserRepository {
+func NewCachedUserRepository(dao dao.UserDAO, c cache.UserCache) UserRepository {
 	return &CachedUserRepository{
 		dao:   dao,
 		cache: c,
 	}
 }
+
+// NewUserRepositoryV2 coupled with Json
+//func NewUserRepositoryV2(cfgBytes string) *CachedUserRepository {
+//	var cfg DBConfig
+//	err := json.Unmarshal([]byte(cfgBytes), &cfg)
+//}
+
+// NewUserRepositoryV1 strong coupling（cross layers), low scalability
+//func NewUserRepositoryV1(dbCfg DBConfig, cCfg CacheConfig) (*CachedUserRepository, error) {
+//	db, err := gorm.Open(mysql.Open(dbCfg.DSN))
+//	if err != nil {
+//		return nil, err
+//	}
+//	ud := dao.NewUserDAO(db)
+//	uc := cache.NewUserCache(redis.NewClient(&redis.Options{
+//		Addr: cCfg.Addr,
+//	}))
+//	return &CachedUserRepository{
+//		dao:   ud,
+//		cache: uc,
+//	}, nil
+//}
 
 func (repo *CachedUserRepository) Create(ctx context.Context, u domain.User) error {
 	return repo.dao.Insert(ctx, repo.toEntity(u))
@@ -57,13 +78,13 @@ func (repo *CachedUserRepository) FindByPhone(ctx context.Context, phone string)
 	return repo.toDomain(u), nil
 }
 
-//func (repo *CachedUserRepository) FindByWechat(ctx context.Context, openId string) (domain.User, error) {
-//	u, err := repo.dao.FindByWechat(ctx, openId)
-//	if err != nil {
-//		return domain.User{}, err
-//	}
-//	return repo.toDomain(u), nil
-//}
+func (repo *CachedUserRepository) FindByWechat(ctx context.Context, openId string) (domain.User, error) {
+	u, err := repo.dao.FindByWechat(ctx, openId)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return repo.toDomain(u), nil
+}
 
 func (repo *CachedUserRepository) FindById(ctx context.Context, uid int64) (domain.User, error) {
 	du, err := repo.cache.Get(ctx, uid)
@@ -125,18 +146,31 @@ func (repo *CachedUserRepository) FindByIdV1(ctx context.Context, uid int64) (do
 }
 
 func (repo *CachedUserRepository) UpdateNonZeroFields(ctx context.Context, user domain.User) error {
-	return repo.dao.UpdateById(ctx, repo.toEntity(user))
+	err := repo.dao.UpdateById(ctx, repo.toEntity(user))
+	if err != nil {
+		return err
+	}
+	// delay 1 second
+	time.AfterFunc(time.Second, func() {
+		_ = repo.cache.Del(ctx, user.Id)
+	})
+	return repo.cache.Del(ctx, user.Id)
 }
 
 func (repo *CachedUserRepository) toDomain(u dao.User) domain.User {
 	return domain.User{
-		Id:       u.Id,
-		Email:    u.Email.String,
-		Phone:    u.Phone.String,
-		Password: u.Password,
-		AboutMe:  u.AboutMe,
-		Nickname: u.Nickname,
-		Birthday: time.UnixMilli(u.Birthday),
+		Id:        u.Id,
+		Email:     u.Email.String,
+		Phone:     u.Phone.String,
+		Password:  u.Password,
+		AboutMe:   u.AboutMe,
+		Nickname:  u.Nickname,
+		Birthday:  time.UnixMilli(u.Birthday),
+		CreatedAt: time.UnixMilli(u.CreatedAt),
+		WechatInfo: domain.WechatInfo{
+			OpenId:  u.WechatOpenId.String,
+			UnionId: u.WechatUnionId.String,
+		},
 	}
 }
 
@@ -153,6 +187,14 @@ func (repo *CachedUserRepository) toEntity(u domain.User) dao.User {
 		},
 		Password: u.Password,
 		Birthday: u.Birthday.UnixMilli(),
+		WechatUnionId: sql.NullString{
+			String: u.WechatInfo.UnionId,
+			Valid:  u.WechatInfo.UnionId != "",
+		},
+		WechatOpenId: sql.NullString{
+			String: u.WechatInfo.OpenId,
+			Valid:  u.WechatInfo.OpenId != "",
+		},
 		Nickname: u.Nickname,
 		AboutMe:  u.AboutMe,
 	}

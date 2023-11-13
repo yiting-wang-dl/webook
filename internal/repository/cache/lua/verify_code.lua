@@ -6,11 +6,13 @@ local expectedCode =ARGV[1]
 local cnt = tonumber(redis.call("get", cntKey))
 local code = redis.call("get", key)
 
-if cnt == nil or cnt <= 0 then
+-- not strictly distinguish between code not sent yet or varified too many times
 -- exhault the verification time
+if cnt == nil or cnt <= 0 then
     return -1
 end
 
+-- code is verified
 if code == expectedCode then
     redis.call("set", cntKey, 0)
     return 0

@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/webook.iml" filepath="$PROJECT_DIR$/.idea/webook.iml" />
       <module fileurl="file://$PROJECT_DIR$/../webook-fe/.idea/webook-fe.iml" filepath="$PROJECT_DIR$/../webook-fe/.idea/webook-fe.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../wire/.idea/wire.iml" filepath="$PROJECT_DIR$/../wire/.idea/wire.iml" />
     </modules>
   </component>
 </project>

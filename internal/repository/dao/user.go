@@ -20,7 +20,7 @@ type UserDAO interface {
 	UpdateById(ctx context.Context, entity User) error
 	FindById(ctx context.Context, uid int64) (User, error)
 	FindByPhone(ctx context.Context, phone string) (User, error)
-	//FindByWechat(ctx context.Context, openId string) (User, error)
+	FindByWechat(ctx context.Context, openId string) (User, error)
 }
 
 type GORMUserDAO struct {
@@ -55,11 +55,11 @@ func (dao *GORMUserDAO) FindByEmail(ctx context.Context, email string) (User, er
 	return u, err
 }
 
-//func (dao *GORMUserDAO) FindByWechat(ctx context.Context, openId string) (User, error) {
-//	var u User
-//	err := dao.db.WithContext(ctx).Where("wechat_open_id=?", openId).First(&u).Error
-//	return u, err
-//}
+func (dao *GORMUserDAO) FindByWechat(ctx context.Context, openId string) (User, error) {
+	var u User
+	err := dao.db.WithContext(ctx).Where("wechat_open_id=?", openId).First(&u).Error
+	return u, err
+}
 
 func (dao *GORMUserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
 	var u User
@@ -93,6 +93,12 @@ type User struct {
 	Birthday int64          // YYYY-MM-DD
 	AboutMe  string         `gorm:"type=varchar(4096)"`
 	Phone    sql.NullString `gorm:"unique"`
+
+	// 1 if the query requires both openid & unionid, need to create a composite unique key
+	// 2 if query requires openid only, then create unique key on openid, or <openid unionid> composite unique key
+	// 3 if query requires unionid only,  then create unique key on unionid, or <openid unionid> composite unique key
+	WechatOpenId  sql.NullString `gorm:"unique"`
+	WechatUnionId sql.NullString
 
 	// timezone，UTC 0 millisecond
 	CreatedAt int64 //`gorm:"column:createdat"`
